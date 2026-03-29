@@ -171,11 +171,11 @@ public class PlayerMovement : MonoBehaviour
     {
         if (isWallSliding)
         {
-            isWallJumping = false;
-            wallJumpDirection = -transform.localScale.x;
-            wallJumpCount = wallJumpTime;
-
-            CancelInvoke(nameof(StopWallJumping));
+            if(!isWallJumping)
+            {
+                wallJumpDirection = -transform.localScale.x;
+                wallJumpCount = wallJumpTime;
+            }
         }
         else
         {
