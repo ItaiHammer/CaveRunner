@@ -1,9 +1,6 @@
 using UnityEngine;
 
-/// <summary>
-/// Smooth 2D follow with horizontal "lead" (camera sits slightly behind motion so you see more ahead).
-/// Optional world-space map clamp for orthographic cameras.
-/// </summary>
+[DefaultExecutionOrder(0)]
 public class CameraFollow2D : MonoBehaviour
 {
     [Header("Target")]
@@ -36,12 +33,14 @@ public class CameraFollow2D : MonoBehaviour
     Rigidbody2D targetRb;
     Vector3 smoothVelocity;
     float currentLeadX;
+    Vector3 smoothedFollowPosition;
 
     void Awake()
     {
         cam = GetComponent<Camera>();
         if (target != null)
             targetRb = target.GetComponent<Rigidbody2D>();
+        smoothedFollowPosition = transform.position;
     }
 
     void LateUpdate()
@@ -68,8 +67,8 @@ public class CameraFollow2D : MonoBehaviour
         desired.x += currentLeadX;
         desired.z = transform.position.z;
 
-        Vector3 nextPos = Vector3.SmoothDamp(transform.position, desired, ref smoothVelocity, followSmoothTime);
-        nextPos.z = transform.position.z;
+        smoothedFollowPosition = Vector3.SmoothDamp(smoothedFollowPosition, desired, ref smoothVelocity, followSmoothTime);
+        smoothedFollowPosition.z = transform.position.z;
 
         if (clampToMap && cam != null && cam.orthographic)
         {
@@ -82,17 +81,17 @@ public class CameraFollow2D : MonoBehaviour
             float maxY = mapWorldMax.y - halfH;
 
             if (minX > maxX)
-                nextPos.x = (mapWorldMin.x + mapWorldMax.x) * 0.5f;
+                smoothedFollowPosition.x = (mapWorldMin.x + mapWorldMax.x) * 0.5f;
             else
-                nextPos.x = Mathf.Clamp(nextPos.x, minX, maxX);
+                smoothedFollowPosition.x = Mathf.Clamp(smoothedFollowPosition.x, minX, maxX);
 
             if (minY > maxY)
-                nextPos.y = (mapWorldMin.y + mapWorldMax.y) * 0.5f;
+                smoothedFollowPosition.y = (mapWorldMin.y + mapWorldMax.y) * 0.5f;
             else
-                nextPos.y = Mathf.Clamp(nextPos.y, minY, maxY);
+                smoothedFollowPosition.y = Mathf.Clamp(smoothedFollowPosition.y, minY, maxY);
         }
 
-        transform.position = nextPos;
+        transform.position = smoothedFollowPosition;
     }
 
 #if UNITY_EDITOR
