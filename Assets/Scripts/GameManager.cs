@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
@@ -6,14 +7,14 @@ public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
 
-    [Header("UI")]
-    [Tooltip("Two lines: (1) collected / total in level, (2) plain hint for exit vs optional 100%.")]
+    [Header("Gameplay HUD")]
+    [Tooltip("Optional parent for all in-game HUD (timer, fragments, etc.). Hidden on game over. If null, fragment + timer objects are hidden instead.")]
+    public GameObject gameplayHudRoot;
+    [Tooltip("Two lines: collected / total and hints.")]
     public TMP_Text fragmentCounterText;
+    public TMP_Text timerText;
 
     [Header("Timer")]
-    [Tooltip("Assign a TextMeshPro label for the countdown.")]
-    public TMP_Text timerText;
-    [Tooltip("If off, timer logic and UI updates are skipped.")]
     public bool useTimer = true;
     [Min(0)]
     public int timerMinutes;
@@ -21,8 +22,28 @@ public class GameManager : MonoBehaviour
     public int timerSeconds;
     [Range(0, 999)]
     public int timerMilliseconds;
-    [Tooltip("Fired once when the countdown hits zero.")]
-    public UnityEvent onTimeExpired;
+    [Tooltip("Shown in the game over reason line when the countdown hits zero.")]
+    public string timeUpMessage = "Time's up!";
+
+    [Header("Game Over")]
+    public GameObject gameOverMenu;
+    [Tooltip("Label for why the run ended (e.g. Time's up, fell, hazard).")]
+    public TMP_Text gameOverReasonText;
+    [Tooltip("Used when TriggerGameOver() is called with no custom message.")]
+    public string defaultGameOverMessage = "Game over.";
+    public UnityEvent onGameOver;
+
+    [Header("Victory")]
+    public GameObject victoryMenu;
+    [Tooltip("Shows remaining countdown time at the moment of victory (same format as the HUD timer).")]
+    public TMP_Text victoryTimeRemainingText;
+    [Tooltip("If the level has no timer, this text is set to this string instead.")]
+    public string victoryNoTimerLabel = "—";
+    public UnityEvent onVictory;
+
+    [Header("Level exit")]
+    [Tooltip("Empty GameObject with a Collider2D (trigger) for the end zone.")]
+    public GameObject levelExitObject;
 
     [Header("Fragments")]
     [Tooltip("How many core fragments the player must collect to finish the level. Can be less than total in the scene.")]
@@ -40,7 +61,14 @@ public class GameManager : MonoBehaviour
 
     public bool IsTimeExpired { get; private set; }
 
+    public bool IsGameOver { get; private set; }
+
+    public bool IsVictory { get; private set; }
+
     float timeRemainingSeconds;
+
+    Collider2D resolvedExitCollider;
+    readonly List<Collider2D> exitOverlapBuffer = new List<Collider2D>();
 
     void Awake()
     {
@@ -72,11 +100,56 @@ public class GameManager : MonoBehaviour
                 + Mathf.Clamp(timerMilliseconds, 0, 999) / 1000f;
             RefreshTimerUI();
         }
+
+        if (gameOverMenu != null)
+            gameOverMenu.SetActive(false);
+        if (victoryMenu != null)
+            victoryMenu.SetActive(false);
+
+        if (levelExitObject != null)
+        {
+            resolvedExitCollider = levelExitObject.GetComponent<Collider2D>();
+            if (resolvedExitCollider == null)
+                Debug.LogWarning("GameManager: Level Exit Object needs a Collider2D on the same GameObject.", levelExitObject);
+        }
+
+        if (resolvedExitCollider != null && !resolvedExitCollider.isTrigger)
+            Debug.LogWarning(
+                "GameManager: level exit collider should have Is Trigger enabled.",
+                resolvedExitCollider);
+    }
+
+    void FixedUpdate()
+    {
+        if (resolvedExitCollider == null || IsVictory || IsGameOver)
+            return;
+
+        exitOverlapBuffer.Clear();
+        ContactFilter2D filter = new ContactFilter2D();
+        filter.NoFilter();
+
+        int count = resolvedExitCollider.OverlapCollider(filter, exitOverlapBuffer);
+        for (int i = 0; i < count; i++)
+        {
+            Collider2D c = exitOverlapBuffer[i];
+            if (c == null || !IsPlayerCollider(c))
+                continue;
+
+            TriggerVictory();
+            return;
+        }
+    }
+
+    static bool IsPlayerCollider(Collider2D c)
+    {
+        if (c.CompareTag("Player"))
+            return true;
+        return c.GetComponentInParent<PlayerMovement>() != null;
     }
 
     void Update()
     {
-        if (!useTimer || IsTimeExpired || timerText == null)
+        if (!useTimer || IsGameOver || IsVictory || timerText == null)
             return;
 
         timeRemainingSeconds -= Time.deltaTime;
@@ -85,7 +158,7 @@ public class GameManager : MonoBehaviour
             timeRemainingSeconds = 0f;
             IsTimeExpired = true;
             RefreshTimerUI();
-            onTimeExpired?.Invoke();
+            TriggerGameOver(timeUpMessage);
             return;
         }
 
@@ -100,6 +173,9 @@ public class GameManager : MonoBehaviour
 
     public void RegisterCoreFragmentCollected()
     {
+        if (IsGameOver || IsVictory)
+            return;
+
         CoreFragmentsCollected++;
         if (CoreFragmentsCollected > TotalCoreFragmentsInLevel)
             CoreFragmentsCollected = TotalCoreFragmentsInLevel;
@@ -107,9 +183,87 @@ public class GameManager : MonoBehaviour
         RefreshFragmentCounterUI();
     }
 
+    public void TriggerGameOver()
+    {
+        TriggerGameOver(defaultGameOverMessage);
+    }
+
+    public void TriggerGameOver(string reason)
+    {
+        if (IsGameOver || IsVictory)
+            return;
+
+        IsGameOver = true;
+        Time.timeScale = 0f;
+
+        HideGameplayHud();
+
+        if (gameOverReasonText != null)
+            gameOverReasonText.text = string.IsNullOrEmpty(reason) ? defaultGameOverMessage : reason;
+
+        if (gameOverMenu != null)
+            gameOverMenu.SetActive(true);
+
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
+        onGameOver?.Invoke();
+    }
+
+    public void TriggerVictory()
+    {
+        if (IsGameOver || IsVictory)
+            return;
+
+        IsVictory = true;
+        Time.timeScale = 0f;
+
+        HideGameplayHud();
+
+        if (victoryTimeRemainingText != null)
+        {
+            if (useTimer)
+                victoryTimeRemainingText.text = FormatTime(timeRemainingSeconds);
+            else
+                victoryTimeRemainingText.text = victoryNoTimerLabel;
+        }
+
+        if (victoryMenu != null)
+            victoryMenu.SetActive(true);
+
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
+        onVictory?.Invoke();
+    }
+
+    static string FormatTime(float seconds)
+    {
+        float t = Mathf.Max(0f, seconds);
+        int m = (int)(t / 60f);
+        float remainder = t - m * 60f;
+        int s = Mathf.FloorToInt(remainder);
+        int ms = Mathf.Clamp(Mathf.FloorToInt((remainder - s) * 1000f), 0, 999);
+        return $"{m}:{s:00}.{ms:000}";
+    }
+
+    void HideGameplayHud()
+    {
+        if (gameplayHudRoot != null)
+        {
+            gameplayHudRoot.SetActive(false);
+            return;
+        }
+
+        if (fragmentCounterText != null)
+            fragmentCounterText.gameObject.SetActive(false);
+        if (timerText != null)
+            timerText.gameObject.SetActive(false);
+    }
+
     void RefreshFragmentCounterUI()
     {
-        if (fragmentCounterText == null)
+        if (IsGameOver || IsVictory || fragmentCounterText == null)
             return;
 
         if (TotalCoreFragmentsInLevel <= 0)
@@ -143,7 +297,7 @@ public class GameManager : MonoBehaviour
 
     void RefreshTimerUI()
     {
-        if (timerText == null)
+        if (IsGameOver || IsVictory || timerText == null)
             return;
 
         if (!useTimer)
@@ -152,11 +306,6 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        float t = Mathf.Max(0f, timeRemainingSeconds);
-        int m = (int)(t / 60f);
-        float remainder = t - m * 60f;
-        int s = Mathf.FloorToInt(remainder);
-        int ms = Mathf.Clamp(Mathf.FloorToInt((remainder - s) * 1000f), 0, 999);
-        timerText.text = $"{m}:{s:00}.{ms:000}";
+        timerText.text = FormatTime(timeRemainingSeconds);
     }
 }
