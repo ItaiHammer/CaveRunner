@@ -4408,7 +4408,7 @@ AudioSource:
   OutputAudioMixerGroup: {fileID: 0}
   m_audioClip: {fileID: 8300000, guid: 366eeaaacf2d748749c4a89be60de089, type: 3}
   m_PlayOnAwake: 1
-  m_Volume: 0.6
+  m_Volume: 0.3
   m_Pitch: 1
   Loop: 1
   Mute: 0
@@ -6012,8 +6012,8 @@ MonoBehaviour:
   fragmentCounterText: {fileID: 1008379889}
   timerText: {fileID: 674699151}
   useTimer: 1
-  timerMinutes: 0
-  timerSeconds: 25
+  timerMinutes: 1
+  timerSeconds: 30
   timerMilliseconds: 0
   timeUpMessage: Time's up!
   gameOverMenu: {fileID: 1550015270}

@@ -41,6 +41,14 @@ public class GameManager : MonoBehaviour
     public string victoryNoTimerLabel = "—";
     public UnityEvent onVictory;
 
+    [Header("Music")]
+    [Tooltip("Shared background music source used during gameplay and swapped on victory.")]
+    public AudioSource backgroundMusicSource;
+    [Tooltip("Track to play once the player wins.")]
+    public AudioClip victoryMusicClip;
+    [Tooltip("Loop victory track while the victory menu is shown.")]
+    public bool loopVictoryMusic = true;
+
     [Header("Level exit")]
     [Tooltip("Empty GameObject with a Collider2D (trigger) for the end zone.")]
     public GameObject levelExitObject;
@@ -69,6 +77,7 @@ public class GameManager : MonoBehaviour
 
     Collider2D resolvedExitCollider;
     readonly List<Collider2D> exitOverlapBuffer = new List<Collider2D>();
+    PlayerMovement cachedPlayer;
 
     void Awake()
     {
@@ -83,6 +92,8 @@ public class GameManager : MonoBehaviour
 
     void Start()
     {
+        cachedPlayer = FindObjectOfType<PlayerMovement>();
+
         CountCoreFragmentsInScene();
         if (fragmentsRequiredToFinish > TotalCoreFragmentsInLevel)
         {
@@ -193,6 +204,7 @@ public class GameManager : MonoBehaviour
         if (IsGameOver || IsVictory)
             return;
 
+        PlayPlayerDeathSfx();
         IsGameOver = true;
         Time.timeScale = 0f;
 
@@ -215,6 +227,7 @@ public class GameManager : MonoBehaviour
         if (IsGameOver || IsVictory)
             return;
 
+        SwitchToVictoryMusic();
         IsVictory = true;
         Time.timeScale = 0f;
 
@@ -235,6 +248,27 @@ public class GameManager : MonoBehaviour
         Cursor.visible = true;
 
         onVictory?.Invoke();
+    }
+
+    void SwitchToVictoryMusic()
+    {
+        if (backgroundMusicSource == null || victoryMusicClip == null)
+            return;
+
+        if (backgroundMusicSource.isPlaying)
+            backgroundMusicSource.Stop();
+
+        backgroundMusicSource.loop = loopVictoryMusic;
+        backgroundMusicSource.clip = victoryMusicClip;
+        backgroundMusicSource.Play();
+    }
+
+    void PlayPlayerDeathSfx()
+    {
+        if (cachedPlayer == null)
+            cachedPlayer = FindObjectOfType<PlayerMovement>();
+        if (cachedPlayer != null)
+            cachedPlayer.PlayDeathSfx();
     }
 
     static string FormatTime(float seconds)

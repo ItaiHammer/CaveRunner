@@ -7,6 +7,10 @@ public class CoreFragment : MonoBehaviour
         if (!IsPlayer(other))
             return;
 
+        PlayerMovement player = other.GetComponentInParent<PlayerMovement>();
+        if (player != null)
+            player.PlayItemPickupSfx();
+
         if (GameManager.Instance != null)
             GameManager.Instance.RegisterCoreFragmentCollected();
 

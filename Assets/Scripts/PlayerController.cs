@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class PlayerMovement : MonoBehaviour
 {
@@ -15,6 +16,17 @@ public class PlayerMovement : MonoBehaviour
 
     [Header("Jump")]
     public float jumpForce = 12f;
+
+    [Header("Audio")]
+    [Tooltip("Shared player audio source used for jump, death, and pickup SFX.")]
+    [FormerlySerializedAs("jumpAudioSource")]
+    public AudioSource playerAudioSource;
+    [Tooltip("Played when the player jumps (ground jump + wall jump).")]
+    public AudioClip jumpSfx;
+    [Tooltip("Played when the player dies / game over triggers.")]
+    public AudioClip deathSfx;
+    [Tooltip("Played when the player picks up a core fragment.")]
+    public AudioClip itemPickupSfx;
 
     [SerializeField] private bool isWallSliding;
     private float wallSlidingSpeed = 1f;
@@ -33,6 +45,7 @@ public class PlayerMovement : MonoBehaviour
 
     private Rigidbody2D rb;
     private SpriteRenderer sr;
+    private Animator animator;
     private ContactPoint2D[] contactBuffer = new ContactPoint2D[16];
     private float horizontalInput;
     private bool jumpQueued;
@@ -49,6 +62,11 @@ public class PlayerMovement : MonoBehaviour
     {
         rb = GetComponent<Rigidbody2D>();
         sr = GetComponent<SpriteRenderer>();
+        animator = GetComponent<Animator>();
+        if (playerAudioSource == null)
+            playerAudioSource = GetComponent<AudioSource>();
+        if ((jumpSfx != null || deathSfx != null || itemPickupSfx != null) && playerAudioSource == null)
+            playerAudioSource = gameObject.AddComponent<AudioSource>();
         rb.interpolation = RigidbodyInterpolation2D.Interpolate;
         currentVx = rb.velocity.x;
     }
@@ -69,6 +87,7 @@ public class PlayerMovement : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Space) && IsGrounded())
         {
             rb.velocity = new Vector2(rb.velocity.x, jumpForce);
+            PlayJumpSfx();
         }
 
 
@@ -125,6 +144,11 @@ public class PlayerMovement : MonoBehaviour
         if (!isWallJumping)
         {
             rb.velocity = new Vector2(horizontalInput * moveSpeed, rb.velocity.y);
+        }
+
+        if (animator != null)
+        {
+            animator.SetBool("isRunning", Mathf.Abs(rb.velocity.x) > 0.05f);
         }
     }
 
@@ -187,6 +211,7 @@ public class PlayerMovement : MonoBehaviour
             isWallJumping = true;
             rb.velocity = new Vector2(wallJumpDirection * wallJumpPower.x, wallJumpPower.y);
             wallJumpCount = 0f;
+            PlayJumpSfx();
 
             if (transform.localScale.x != wallJumpDirection)
             {
@@ -214,5 +239,23 @@ public class PlayerMovement : MonoBehaviour
             localScale.x *= -1f;
             transform.localScale = localScale;
         }
+    }
+
+    void PlayJumpSfx()
+    {
+        if (jumpSfx != null && playerAudioSource != null)
+            playerAudioSource.PlayOneShot(jumpSfx);
+    }
+
+    public void PlayDeathSfx()
+    {
+        if (deathSfx != null && playerAudioSource != null)
+            playerAudioSource.PlayOneShot(deathSfx);
+    }
+
+    public void PlayItemPickupSfx()
+    {
+        if (itemPickupSfx != null && playerAudioSource != null)
+            playerAudioSource.PlayOneShot(itemPickupSfx);
     }
 }
