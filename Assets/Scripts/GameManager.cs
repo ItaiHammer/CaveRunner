@@ -7,6 +7,9 @@ public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
 
+    [Header("Player Elements")]
+    [SerializeField]private PlayerMovement playerController;
+
     [Header("Gameplay HUD")]
     [Tooltip("Optional parent for all in-game HUD (timer, fragments, etc.). Hidden on game over. If null, fragment + timer objects are hidden instead.")]
     public GameObject gameplayHudRoot;
@@ -31,6 +34,7 @@ public class GameManager : MonoBehaviour
     public TMP_Text gameOverReasonText;
     [Tooltip("Used when TriggerGameOver() is called with no custom message.")]
     public string defaultGameOverMessage = "Game over.";
+    public string deathMessage = "You died!";
     public UnityEvent onGameOver;
 
     [Header("Victory")]
@@ -172,7 +176,14 @@ public class GameManager : MonoBehaviour
             TriggerGameOver(timeUpMessage);
             return;
         }
-
+        // if(playerController.getDead())
+        // {
+        //     timeRemainingSeconds = 0f;
+        //     IsTimeExpired = true;
+        //     RefreshTimerUI();
+        //     TriggerGameOver(deathMessage);
+        //     return;
+        // }
         RefreshTimerUI();
     }
 

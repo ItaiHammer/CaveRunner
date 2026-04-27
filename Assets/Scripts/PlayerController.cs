@@ -15,7 +15,7 @@ public class PlayerMovement : MonoBehaviour
     public float airControl = 0.65f;
 
     [Header("Jump")]
-    public float jumpForce = 12f;
+    public float jumpForce = 9f;
 
     [Header("Audio")]
     [Tooltip("Shared player audio source used for jump, death, and pickup SFX.")]
@@ -28,6 +28,7 @@ public class PlayerMovement : MonoBehaviour
     [Tooltip("Played when the player picks up a core fragment.")]
     public AudioClip itemPickupSfx;
 
+    private float jumpCount = 2;
     [SerializeField] private bool isWallSliding;
     private float wallSlidingSpeed = 1f;
 
@@ -36,7 +37,7 @@ public class PlayerMovement : MonoBehaviour
     private float wallJumpTime = 0.2f;
     private float wallJumpCount;
     [SerializeField] private float wallJumpDuration = 0.4f;
-    private Vector2 wallJumpPower = new Vector2(8f, 16f);
+    private Vector2 wallJumpPower = new Vector2(6f, 16f);
     private bool isFacingRight = true;
 
     [Header("Ground check")]
@@ -46,9 +47,7 @@ public class PlayerMovement : MonoBehaviour
     private Rigidbody2D rb;
     private SpriteRenderer sr;
     private Animator animator;
-    private ContactPoint2D[] contactBuffer = new ContactPoint2D[16];
     private float horizontalInput;
-    private bool jumpQueued;
     private float currentVx;
 
     [SerializeField] private bool isGrounded;
@@ -57,6 +56,11 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private bool isWalled;
     [SerializeField] private Transform wallCheck;
     [SerializeField] private LayerMask wallLayer;
+
+    [Header("Death Triggers")]
+    [SerializeField] private bool isDead;
+    [SerializeField] private LayerMask deathLayer;
+    [SerializeField] private ParticleSystem particleSystem;
 
     void Start()
     {
@@ -74,22 +78,21 @@ public class PlayerMovement : MonoBehaviour
     void Update()
     {
         isGrounded = false;
+        isDead = false;
         horizontalInput = Input.GetAxis("Horizontal");
-        // if (Input.GetKeyDown(KeyCode.Space))
-        //     jumpQueued = true;
 
-        // if (sr != null)
-        // {
-        //     if (rb.velocity.x > 0.1f) sr.flipX = false;
-        //     else if (rb.velocity.x < -0.1f) sr.flipX = true;
-        // }
-
-        if (Input.GetKeyDown(KeyCode.Space) && IsGrounded())
+        IsGrounded();
+        if (Input.GetKeyDown(KeyCode.Space) && jumpCount > 0)
         {
             rb.velocity = new Vector2(rb.velocity.x, jumpForce);
+            jumpCount--;
             PlayJumpSfx();
         }
 
+        if(!isDead) 
+        {
+            IsDead();
+        }
 
         WallSlide();
         WallJump();
@@ -102,45 +105,11 @@ public class PlayerMovement : MonoBehaviour
 
     void FixedUpdate()
     {
-        // int count = rb.GetContacts(contactBuffer);
-        // for (int i = 0; i < count; i++)
-        // {
-        //     if (Vector2.Dot(contactBuffer[i].normal, Vector2.up) >= groundNormalDot)
-        //     {
-        //         isGrounded = true;
-        //         break;
-        //     }
-        // }
-
         float targetVx = horizontalInput * moveSpeed;
         float dt = Time.fixedDeltaTime;
         float accel = acceleration;
         float decel = deceleration;
         
-        // if(!isWallJumping)
-        // {
-        //     if (!IsGrounded())
-        //     {
-        //         accel *= airControl;
-        //         decel *= airControl;
-        //     }
-
-        
-        //     if (Mathf.Abs(horizontalInput) > 0.01f)
-        //         currentVx = Mathf.MoveTowards(currentVx, targetVx, accel * dt);
-        //     else
-        //         currentVx = Mathf.MoveTowards(currentVx, 0f, decel * dt);
-
-        //     rb.velocity = new Vector2(currentVx, rb.velocity.y);
-        
-
-        //     if (jumpQueued)
-        //     {
-        //         jumpQueued = false;
-        //         if (IsGrounded())
-        //             rb.velocity = new Vector2(currentVx, jumpForce);
-        //     }
-        // }
         if (!isWallJumping)
         {
             rb.velocity = new Vector2(horizontalInput * moveSpeed, rb.velocity.y);
@@ -157,6 +126,7 @@ public class PlayerMovement : MonoBehaviour
         if(Physics2D.OverlapCircle(groundCheck.position, 0.2f, groundLayer))
         {
             isGrounded = true;
+            jumpCount = 1;
         }
         else
         {
@@ -170,12 +140,32 @@ public class PlayerMovement : MonoBehaviour
         if(Physics2D.OverlapCircle(wallCheck.position, 0.2f, wallLayer))
         {
             isWalled = true;
+            jumpCount = 1;
         }
         else
         {
             isWalled = false;
         }
         return isWalled;
+    }
+
+    public bool getDead()
+    {
+        return isDead;
+    }
+
+    private bool IsDead()
+    {
+        if(!isDead && Physics2D.OverlapCircle(groundCheck.position, 0.2f, deathLayer))
+        {
+            isDead = true;
+            TriggerBurst();
+        }
+        else
+        {
+            isDead = false;
+        }
+        return isDead;
     }
 
     private void WallSlide()
@@ -257,5 +247,10 @@ public class PlayerMovement : MonoBehaviour
     {
         if (itemPickupSfx != null && playerAudioSource != null)
             playerAudioSource.PlayOneShot(itemPickupSfx);
+    }
+
+    public void TriggerBurst()
+    {
+        particleSystem.Play();
     }
 }

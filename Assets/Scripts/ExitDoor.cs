@@ -8,6 +8,8 @@ public class ExitDoor : MonoBehaviour
     public float openDistance = 3f;
     [Tooltip("Seconds to slide up after the shake.")]
     public float openDuration = 0.55f;
+    public SpriteRenderer doorOpen;
+    public SpriteRenderer doorClose;
 
     [Header("Shake (door)")]
     [Tooltip("Seconds of rumble before the door lifts.")]
@@ -33,6 +35,9 @@ public class ExitDoor : MonoBehaviour
 
     void Awake()
     {
+        doorOpen.enabled = false;
+        doorClose.enabled = true;
+
         closedLocalPosition = transform.localPosition;
         if (doorAudioSource == null)
         {
@@ -95,6 +100,8 @@ public class ExitDoor : MonoBehaviour
             float u = Mathf.Clamp01(t / openDuration);
             u = u * u * (3f - 2f * u);
             transform.localPosition = Vector3.Lerp(start, end, u);
+            doorOpen.enabled = true;
+            doorClose.enabled = false;
             yield return null;
         }
 
