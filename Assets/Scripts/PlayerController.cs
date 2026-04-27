@@ -117,6 +117,7 @@ public class PlayerMovement : MonoBehaviour
         if (animator != null)
         {
             animator.SetBool("isRunning", Mathf.Abs(rb.velocity.x) > 0.05f);
+            animator.SetBool("isJumping", !isGrounded);
         }
     }
 
