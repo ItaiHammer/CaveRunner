@@ -60,7 +60,6 @@ public class PlayerMovement : MonoBehaviour
     [Header("Death Triggers")]
     [SerializeField] private bool isDead;
     [SerializeField] private LayerMask deathLayer;
-    [SerializeField] private ParticleSystem particleSystem;
 
     void Start()
     {
@@ -159,7 +158,6 @@ public class PlayerMovement : MonoBehaviour
         if(!isDead && Physics2D.OverlapCircle(groundCheck.position, 0.2f, deathLayer))
         {
             isDead = true;
-            TriggerBurst();
         }
         else
         {
@@ -247,10 +245,5 @@ public class PlayerMovement : MonoBehaviour
     {
         if (itemPickupSfx != null && playerAudioSource != null)
             playerAudioSource.PlayOneShot(itemPickupSfx);
-    }
-
-    public void TriggerBurst()
-    {
-        particleSystem.Play();
     }
 }

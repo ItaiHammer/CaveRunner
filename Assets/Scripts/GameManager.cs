@@ -176,14 +176,14 @@ public class GameManager : MonoBehaviour
             TriggerGameOver(timeUpMessage);
             return;
         }
-        // if(playerController.getDead())
-        // {
-        //     timeRemainingSeconds = 0f;
-        //     IsTimeExpired = true;
-        //     RefreshTimerUI();
-        //     TriggerGameOver(deathMessage);
-        //     return;
-        // }
+        if(playerController.getDead())
+        {
+            timeRemainingSeconds = 0f;
+            IsTimeExpired = false;
+            RefreshTimerUI();
+            TriggerGameOver(deathMessage);
+            return;
+        }
         RefreshTimerUI();
     }
 

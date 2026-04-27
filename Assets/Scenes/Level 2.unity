@@ -182,7 +182,6 @@ MonoBehaviour:
   deathLayer:
     serializedVersion: 2
     m_Bits: 256
-  particleSystem: {fileID: 1210063108}
 --- !u!50 &31190758
 Rigidbody2D:
   serializedVersion: 4
