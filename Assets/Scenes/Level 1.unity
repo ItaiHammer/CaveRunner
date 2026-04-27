@@ -6667,7 +6667,7 @@ MonoBehaviour:
   timerText: {fileID: 674699151}
   useTimer: 1
   timerMinutes: 1
-  timerSeconds: 30
+  timerSeconds: 0
   timerMilliseconds: 0
   timeUpMessage: Time's up!
   gameOverMenu: {fileID: 1550015270}
