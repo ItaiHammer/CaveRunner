@@ -4966,7 +4966,7 @@ MonoBehaviour:
   m_Intensity: 3.5
   m_LightVolumeIntensity: 1
   m_LightVolumeIntensityEnabled: 0
-  m_ApplyToSortingLayers: 00000000
+  m_ApplyToSortingLayers: 00000000172ba7c3
   m_LightCookieSprite: {fileID: 0}
   m_DeprecatedPointLightCookieSprite: {fileID: 0}
   m_LightOrder: 0
@@ -5089,3 +5089,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fcd5b4aaaf3494b24a4e6f09d5a70f4d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  minIntensityMultiplier: 0.7
+  maxIntensityMultiplier: 1.25
+  pulseSpeed: 2
+  randomSpeedOffset: 0.8

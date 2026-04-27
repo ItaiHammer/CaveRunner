@@ -42,3 +42,12 @@ TagManager:
   - name: Default
     uniqueID: 0
     locked: 0
+  - name: Ground
+    uniqueID: 3282512663
+    locked: 0
+  - name: Lava
+    uniqueID: 3604066121
+    locked: 0
+  - name: Door
+    uniqueID: 703437679
+    locked: 0
