@@ -23,7 +23,7 @@ Each level contains more than the required number of fragments, which introduces
 
 The completionist approach is designed to challenge players to fully master the game’s movement mechanics, level layout, and flow.
 
-### Technical Criteria
+## Technical Criteria
 
 Audio: Implementation of background music, spatial 3D sound effects, and UI feedback sounds.
 * Custom Audio SFX and soundtrack recorded, processed, and written by Itai, with audio points originating from character, exit door, or background
